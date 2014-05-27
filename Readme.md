@@ -1,7 +1,10 @@
 Basic Installation & Configuration
 ==================================
 
-1. Clone the project into your plugins directory. 
+1. Clone the project into your Plugins directory. 
+
+  1. Download ThirdParty.zip and unzip it into the Plugins directory. 
+  
 2. Add this Flathead to the PrivateDependencyModuleNames list.
 
     ```csharp
