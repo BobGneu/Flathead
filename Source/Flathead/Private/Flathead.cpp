@@ -928,7 +928,9 @@ void Flathead::Math_Rand(const FunctionCallbackInfo<Value>& args)
 
 Handle<Context> Flathead::GetGlobalContext()
 {
-	return Local<Context>::New(GetIsolate(), globalContext);
+	EscapableHandleScope handle_scope(GetIsolate());
+
+	return handle_scope.Escape(Local<Context>::New(GetIsolate(), globalContext));
 }
 
 Handle<Object> Flathead::Expose(AActor *actor, FString Name)

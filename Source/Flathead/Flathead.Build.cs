@@ -62,7 +62,7 @@ public class Flathead : ModuleRules
                 LibrariesPath = Path.Combine(LibrariesPath, "x86");
             }
 
-            LibrariesPath = Path.Combine(LibrariesPath, "Debug");
+            LibrariesPath = Path.Combine(LibrariesPath, "Release");
 
             PublicAdditionalLibraries.Add(Path.Combine(LibrariesPath, "icui18n.lib"));
             PublicAdditionalLibraries.Add(Path.Combine(LibrariesPath, "icuuc.lib"));
