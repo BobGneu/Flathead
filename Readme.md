@@ -1,28 +1,79 @@
-Installation
+Basic Installation & Configuration
+==================================
+
+1. Clone the project into your Plugins directory. 
+
+  1. Download ThirdParty.zip and unzip it into the Plugins directory. 
+  
+2. Add this Flathead to the PrivateDependencyModuleNames list.
+
+    ```csharp
+    PrivateDependencyModuleNames.Add("Flathead");
+	```
+	
+3. Overwrite the base module, hooking into the StartupModule method.
+
+	```cpp
+	class FMyJSSampleModule : public FDefaultGameModuleImpl
+	{
+		virtual void StartupModule() OVERRIDE;
+	};
+	
+	void FMyJSSampleModule::StartupModule()
+	{
+		if (IFlathead::IsAvailable())
+		{
+			IFlathead::Get().LoadGameScript("GameInit.js");
+		}
+	}
+	```
+
+4. Add your script file to the /Scripts directory of your project.
+
+	```javascript
+	game.log("Game Initialization");
+	
+	Object.addEventListener("game.tick", function (ev) {
+		game.log("tick.", ev.deltaTime);
+	});
+	```
+	
+5. Expose your types to JS
+
+	```cpp
+	void AFH_FlyingPawn::Expose()
+	{
+		if (!IFlathead::IsAvailable())
+			return;
+	
+		IFlathead &ref = IFlathead::Get();
+		HandleScope handle_scope(ref.GetIsolate());
+	
+		Local<Context> context = ref.GetGlobalContext();
+		Context::Scope ContextScope(context);
+	
+		Local<Object> Bob = ref.Expose(this, TEXT("Bob"));
+	
+		Bob->Set(String::NewFromUtf8(ref.GetIsolate(), "value", String::kInternalizedString), Number::New(ref.GetIsolate(), 42));
+	
+		Local<String> key = String::NewFromUtf8(ref.GetIsolate(), "test", String::kInternalizedString);
+	
+		ref.LoadGameScript("BobTest.js");
+	 }
+	```
+
+6. Enjoy!
+
+Please consult the Wiki for further documentation. 
+If you run into any issues, please file a ticket in the GH Tracker. 
+
+Sample Projects & Code
+===============
+* Flying Game: https://github.com/BobGneu/UE4FlyingGame
+
+Known Issues
 ============
-
-Unzip the package into the Plugins directory of your game. To add it as an engine plugin you will need to unzip the module into the plugin directory under where you installed UE4.
-
-Loading JS
-==========
-
-The IV8Plugin class has two static methods, one to check and see if the plugin is present, the other to get an instance of it. Once you have the instance you can load a file, as follows:
-
-    if (IV8Plugin::IsAvailable())
-    {
-	    IV8Plugin::Get().Load("myJavascriptFile.js");
-    }
-
-This can be called from any location in your module. I recommend loading a global initialization file from the module's StartModule method, and that you use this opportunity to hook into any number of events that would then be fired off by the C++ code. 
-
-The Global Context
-==================
-
-There are two global objects to note. 
-
- * **game** takes the place of what you may have worked with on the web - console. All five levels of logging in UE4 are functions attached to this object: Log, Display, Warning, Error, Fatal. game also has a readonly version property, allowing you to query for the version of unreal engine. 
-
- * **v8** has two readonly properties: version to query for the current version of V8 bound to the plugin; and bindingVersion which is incrementing as the API for the plugin is iterated over. 
+Exposing Functions is currently not working, but may be addressed with updating to a later build of V8. You can contribute to the discussion on this topic here: https://groups.google.com/forum/#!topic/v8-users/cYkuljdJEJ8
 
 Contact 
 =======
