@@ -17,14 +17,14 @@
 /**
 * The public interface to this module. 
 */
-class IFlathead : public IModuleInterface
+class Flathead : public IModuleInterface
 {
 
 public:
 
-	static inline IFlathead& Get()
+	static inline Flathead& Get()
 	{
-		return FModuleManager::LoadModuleChecked<IFlathead>("Flathead");
+		return FModuleManager::LoadModuleChecked<Flathead>("Flathead");
 	}
 
 	static inline bool IsAvailable()

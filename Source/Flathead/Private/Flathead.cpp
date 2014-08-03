@@ -13,7 +13,7 @@ DEFINE_LOG_CATEGORY(FH);
 
 using namespace v8;
 
-Flathead* Flathead::accessor = NULL;
+Flathead_impl* Flathead_impl::accessor = NULL;
 
 #define FUNCTION_PROTOTYPE(target, name, fn) \
 	target->PrototypeTemplate()->Set(String::NewFromUtf8(GetIsolate(), name, String::kInternalizedString), FunctionTemplate::New(GetIsolate(), fn));
@@ -28,7 +28,7 @@ Flathead* Flathead::accessor = NULL;
 	target->PrototypeTemplate()->Set(String::NewFromUtf8(GetIsolate(), name, String::kInternalizedString), String::NewFromUtf8(GetIsolate(), val))
 
 
-void Flathead::StartupModule()
+void Flathead_impl::StartupModule()
 {
 	V8::InitializeICU();
 
@@ -40,17 +40,17 @@ void Flathead::StartupModule()
 	Handle<Context> context = CreateGlobalContext();
 	globalContext.Reset(GetIsolate(), context);
 
-	GetIsolate()->SetEventLogger(Flathead::LoggerCallback);
+	GetIsolate()->SetEventLogger(Flathead_impl::LoggerCallback);
 
 	LoadScript("Initialization.js");
 }
 
-void Flathead::LoggerCallback(const char* message, int status)
+void Flathead_impl::LoggerCallback(const char* message, int status)
 {
 	UE_LOG(FH, Log, TEXT("%d - %s"), status, UTF8_TO_TCHAR(message));
 }
 
-Handle<Context> Flathead::CreateGlobalContext()
+Handle<Context> Flathead_impl::CreateGlobalContext()
 {
 	Local<ObjectTemplate> objTemplate = ObjectTemplate::New(GetIsolate());
 
@@ -63,22 +63,22 @@ Handle<Context> Flathead::CreateGlobalContext()
 	return Context::New(GetIsolate(), NULL, objTemplate);
 }
 
-void Flathead::ShutdownModule()
+void Flathead_impl::ShutdownModule()
 {
 	V8::Dispose();
 }
 
-FString Flathead::GetCoreScriptsDirectory()
+FString Flathead_impl::GetCoreScriptsDirectory()
 {
 	return FPaths::GamePluginsDir() + "Flathead/Scripts/";
 }
 
-FString Flathead::GetGameScriptsDirectory()
+FString Flathead_impl::GetGameScriptsDirectory()
 {
 	return FPaths::GameDir() + "Scripts/";
 }
 
-bool Flathead::LoadScript(char* fileName)
+bool Flathead_impl::LoadScript(char* fileName)
 {
 	UE_LOG(FH, Log, TEXT("Attempting to load script %s"), *FString(fileName));
 	if (LoadGameScript(fileName) || LoadCoreScript(fileName))
@@ -89,7 +89,7 @@ bool Flathead::LoadScript(char* fileName)
 	return false;
 }
 
-bool Flathead::LoadGameScript(char* fileName)
+bool Flathead_impl::LoadGameScript(char* fileName)
 {
 	bool result = false;
 
@@ -123,12 +123,12 @@ bool Flathead::LoadGameScript(char* fileName)
 	return false;
 }
 
-bool Flathead::LoadGameScript(FString filename)
+bool Flathead_impl::LoadGameScript(FString filename)
 {
 	return LoadGameScript(TCHAR_TO_ANSI(*filename));
 }
 
-bool Flathead::LoadCoreScript(char* filename)
+bool Flathead_impl::LoadCoreScript(char* filename)
 {
 	bool result = false;
 
@@ -162,12 +162,12 @@ bool Flathead::LoadCoreScript(char* filename)
 	return result;
 }
 
-bool Flathead::Execute(FString data, FString filename)
+bool Flathead_impl::Execute(FString data, FString filename)
 {
 	return Execute(TCHAR_TO_ANSI(*data), TCHAR_TO_ANSI(*filename));
 }
 
-bool Flathead::Execute(char * data, char * filename)
+bool Flathead_impl::Execute(char * data, char * filename)
 {
 	FString result;
 	TryCatch try_catch;
@@ -197,7 +197,7 @@ bool Flathead::Execute(char * data, char * filename)
 	return true;
 }
 
-FString Flathead::ArgsToFstr(const v8::FunctionCallbackInfo<v8::Value>& args)
+FString Flathead_impl::ArgsToFstr(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
 	bool first = true;
 	FString fstr;
@@ -220,7 +220,7 @@ FString Flathead::ArgsToFstr(const v8::FunctionCallbackInfo<v8::Value>& args)
 
 #pragma region V8 Methods
 
-void Flathead::DefineV8Functions(Local<ObjectTemplate> globalTemplate)
+void Flathead_impl::DefineV8Functions(Local<ObjectTemplate> globalTemplate)
 {
 	HandleScope scope(GetIsolate());
 
@@ -229,18 +229,18 @@ void Flathead::DefineV8Functions(Local<ObjectTemplate> globalTemplate)
 
 	Local<FunctionTemplate> v8_tmp = v8::FunctionTemplate::New(GetIsolate());
 
-	ACCESSOR_PROTOTYPE(v8_tmp, "version", Flathead::GetV8Version);
-	ACCESSOR_PROTOTYPE(v8_tmp, "bindingVersion", Flathead::GetBindingVersion);
+	ACCESSOR_PROTOTYPE(v8_tmp, "version", Flathead_impl::GetV8Version);
+	ACCESSOR_PROTOTYPE(v8_tmp, "bindingVersion", Flathead_impl::GetBindingVersion);
 
 	globalTemplate->Set(String::NewFromUtf8(GetIsolate(), "v8"), v8_tmp->GetFunction()->NewInstance(), ReadOnly);
 }
 
-void Flathead::GetV8Version(Local<String> name, const PropertyCallbackInfo<Value>& info)
+void Flathead_impl::GetV8Version(Local<String> name, const PropertyCallbackInfo<Value>& info)
 {
 	info.GetReturnValue().Set(String::NewFromUtf8(info.GetIsolate(), V8::GetVersion(), String::kNormalString));
 }
 
-void Flathead::GetBindingVersion(Local<String> name, const PropertyCallbackInfo<Value>& info)
+void Flathead_impl::GetBindingVersion(Local<String> name, const PropertyCallbackInfo<Value>& info)
 {
 	info.GetReturnValue().Set(String::NewFromUtf8(info.GetIsolate(), BINDING_VERSION, String::kNormalString));
 }
@@ -249,7 +249,7 @@ void Flathead::GetBindingVersion(Local<String> name, const PropertyCallbackInfo<
 
 #pragma region Logging Methods
 
-void Flathead::DefineLoggingFunctions(Local<ObjectTemplate> globalTemplate)
+void Flathead_impl::DefineLoggingFunctions(Local<ObjectTemplate> globalTemplate)
 {
 	HandleScope scope(GetIsolate());
 
@@ -258,44 +258,44 @@ void Flathead::DefineLoggingFunctions(Local<ObjectTemplate> globalTemplate)
 
 	Local<FunctionTemplate> log_tmp = FunctionTemplate::New(GetIsolate());
 
-	FUNCTION_PROTOTYPE(log_tmp, "log", Flathead::LogCallback);
-	FUNCTION_PROTOTYPE(log_tmp, "display", Flathead::DisplayCallback);
-	FUNCTION_PROTOTYPE(log_tmp, "warning", Flathead::WarningCallback);
-	FUNCTION_PROTOTYPE(log_tmp, "error", Flathead::ErrorCallback);
-	FUNCTION_PROTOTYPE(log_tmp, "fatal", Flathead::FatalCallback);
+	FUNCTION_PROTOTYPE(log_tmp, "log", Flathead_impl::LogCallback);
+	FUNCTION_PROTOTYPE(log_tmp, "display", Flathead_impl::DisplayCallback);
+	FUNCTION_PROTOTYPE(log_tmp, "warning", Flathead_impl::WarningCallback);
+	FUNCTION_PROTOTYPE(log_tmp, "error", Flathead_impl::ErrorCallback);
+	FUNCTION_PROTOTYPE(log_tmp, "fatal", Flathead_impl::FatalCallback);
 
 	globalTemplate->Set(String::NewFromUtf8(GetIsolate(), "game"), log_tmp->GetFunction()->NewInstance(), ReadOnly);
 }
 
-void Flathead::LogCallback(const FunctionCallbackInfo<Value>& info)
+void Flathead_impl::LogCallback(const FunctionCallbackInfo<Value>& info)
 {
 	UE_LOG(FH, Log, TEXT("%s"), *ArgsToFstr(info));
 
 	info.GetReturnValue().Set(true);
 }
 
-void Flathead::DisplayCallback(const FunctionCallbackInfo<Value>& info)
+void Flathead_impl::DisplayCallback(const FunctionCallbackInfo<Value>& info)
 {
 	UE_LOG(FH, Display, TEXT("%s"), *ArgsToFstr(info));
 
 	info.GetReturnValue().Set(true);
 }
 
-void Flathead::WarningCallback(const FunctionCallbackInfo<Value>& info)
+void Flathead_impl::WarningCallback(const FunctionCallbackInfo<Value>& info)
 {
 	UE_LOG(FH, Warning, TEXT("%s"), *ArgsToFstr(info));
 
 	info.GetReturnValue().Set(true);
 }
 
-void Flathead::ErrorCallback(const FunctionCallbackInfo<Value>& info)
+void Flathead_impl::ErrorCallback(const FunctionCallbackInfo<Value>& info)
 {
 	UE_LOG(FH, Error, TEXT("%s"), *ArgsToFstr(info));
 
 	info.GetReturnValue().Set(true);
 }
 
-void Flathead::FatalCallback(const FunctionCallbackInfo<Value>& info)
+void Flathead_impl::FatalCallback(const FunctionCallbackInfo<Value>& info)
 {
 	UE_LOG(FH, Fatal, TEXT("%s"), *ArgsToFstr(info));
 
@@ -306,7 +306,7 @@ void Flathead::FatalCallback(const FunctionCallbackInfo<Value>& info)
 
 #pragma region UE4 Functions
 
-void Flathead::DefineUE4Functions(Local<ObjectTemplate> globalTemplate)
+void Flathead_impl::DefineUE4Functions(Local<ObjectTemplate> globalTemplate)
 {
 	HandleScope scope(GetIsolate());
 
@@ -315,12 +315,12 @@ void Flathead::DefineUE4Functions(Local<ObjectTemplate> globalTemplate)
 
 	Local<FunctionTemplate> game_tmp = FunctionTemplate::New(GetIsolate());
 
-	ACCESSOR_PROTOTYPE(game_tmp, "version", Flathead::GetVersion);
+	ACCESSOR_PROTOTYPE(game_tmp, "version", Flathead_impl::GetVersion);
 
 	globalTemplate->Set(String::NewFromUtf8(GetIsolate(), "game"), game_tmp->GetFunction()->NewInstance(), ReadOnly);
 }
 
-void Flathead::GetVersion(Local<String> name, const PropertyCallbackInfo<Value>& info)
+void Flathead_impl::GetVersion(Local<String> name, const PropertyCallbackInfo<Value>& info)
 {
 	info.GetReturnValue().Set(String::NewFromUtf8(info.GetIsolate(), TCHAR_TO_UTF8(*GEngineVersion.ToString())));
 }
@@ -329,19 +329,19 @@ void Flathead::GetVersion(Local<String> name, const PropertyCallbackInfo<Value>&
 
 #pragma region Require 
 
-void Flathead::DefineRequire(Local<ObjectTemplate> objTemplate)
+void Flathead_impl::DefineRequire(Local<ObjectTemplate> objTemplate)
 {
 	HandleScope scope(GetIsolate());
 
 	Handle<Context> context = Context::New(GetIsolate());
 	Context::Scope ContextScope(context);
 
-	Local<FunctionTemplate> require = FunctionTemplate::New(GetIsolate(), Flathead::Require);
+	Local<FunctionTemplate> require = FunctionTemplate::New(GetIsolate(), Flathead_impl::Require);
 
 	objTemplate->Set(String::NewFromUtf8(GetIsolate(), "require"), require->GetFunction(), ReadOnly);
 }
 
-void Flathead::Require(const FunctionCallbackInfo<Value>& info)
+void Flathead_impl::Require(const FunctionCallbackInfo<Value>& info)
 {
 	FString target = ArgsToFstr(info) + ".js";
 
@@ -361,7 +361,7 @@ void Flathead::Require(const FunctionCallbackInfo<Value>& info)
 
 #pragma region UObject
 
-void Flathead::DefineUObject(v8::Local<v8::ObjectTemplate> globalTemplate)
+void Flathead_impl::DefineUObject(v8::Local<v8::ObjectTemplate> globalTemplate)
 {
 	HandleScope scope(GetIsolate());
 
@@ -377,7 +377,7 @@ void Flathead::DefineUObject(v8::Local<v8::ObjectTemplate> globalTemplate)
 
 #pragma region AActor
 
-void Flathead::DefineActor(v8::Local<v8::ObjectTemplate> globalTemplate)
+void Flathead_impl::DefineActor(v8::Local<v8::ObjectTemplate> globalTemplate)
 {
 	HandleScope scope(GetIsolate());
 
@@ -414,7 +414,7 @@ void Flathead::DefineActor(v8::Local<v8::ObjectTemplate> globalTemplate)
 	globalTemplate->Set(String::NewFromUtf8(GetIsolate(), "FVector"), fvector->NewInstance(), ReadOnly);
 	
 */
-void Flathead::DefineMath(v8::Local<v8::ObjectTemplate> globalTemplate)
+void Flathead_impl::DefineMath(v8::Local<v8::ObjectTemplate> globalTemplate)
 {
 	HandleScope scope(GetIsolate());
 
@@ -448,26 +448,26 @@ void Flathead::DefineMath(v8::Local<v8::ObjectTemplate> globalTemplate)
 	NUMBER_PROTOTYPE(umath, "THRESH_VECTORS_ARE_PARALLEL", THRESH_VECTORS_ARE_PARALLEL);
 	
 	// Functions
-	FUNCTION_PROTOTYPE(umath, "abs", Flathead::Math_Abs);
-	FUNCTION_PROTOTYPE(umath, "acos", Flathead::Math_ACos);
-	FUNCTION_PROTOTYPE(umath, "asin", Flathead::Math_ASin);
-	FUNCTION_PROTOTYPE(umath, "atan", Flathead::Math_ATan);
-	FUNCTION_PROTOTYPE(umath, "atan2", Flathead::Math_ATan2);
-	FUNCTION_PROTOTYPE(umath, "ceil", Flathead::Math_Ceil);
-	FUNCTION_PROTOTYPE(umath, "clamp", Flathead::Math_Clamp);
-	FUNCTION_PROTOTYPE(umath, "clampAngle", Flathead::Math_ClampAngle);
-	FUNCTION_PROTOTYPE(umath, "cos", Flathead::Math_Cos);
-	FUNCTION_PROTOTYPE(umath, "exp", Flathead::Math_Exp);
-	FUNCTION_PROTOTYPE(umath, "findDeltaAngle", Flathead::Math_FindDeltaAngle);
-	FUNCTION_PROTOTYPE(umath, "radiansToDegrees", Flathead::Math_RadiansToDegrees);
-	FUNCTION_PROTOTYPE(umath, "degreesToRadians", Flathead::Math_DegreesToRadians);
-	FUNCTION_PROTOTYPE(umath, "unwindDegrees", Flathead::Math_UnwindDegrees);
-	FUNCTION_PROTOTYPE(umath, "unwindRadians", Flathead::Math_UnwindRadians);
+	FUNCTION_PROTOTYPE(umath, "abs", Flathead_impl::Math_Abs);
+	FUNCTION_PROTOTYPE(umath, "acos", Flathead_impl::Math_ACos);
+	FUNCTION_PROTOTYPE(umath, "asin", Flathead_impl::Math_ASin);
+	FUNCTION_PROTOTYPE(umath, "atan", Flathead_impl::Math_ATan);
+	FUNCTION_PROTOTYPE(umath, "atan2", Flathead_impl::Math_ATan2);
+	FUNCTION_PROTOTYPE(umath, "ceil", Flathead_impl::Math_Ceil);
+	FUNCTION_PROTOTYPE(umath, "clamp", Flathead_impl::Math_Clamp);
+	FUNCTION_PROTOTYPE(umath, "clampAngle", Flathead_impl::Math_ClampAngle);
+	FUNCTION_PROTOTYPE(umath, "cos", Flathead_impl::Math_Cos);
+	FUNCTION_PROTOTYPE(umath, "exp", Flathead_impl::Math_Exp);
+	FUNCTION_PROTOTYPE(umath, "findDeltaAngle", Flathead_impl::Math_FindDeltaAngle);
+	FUNCTION_PROTOTYPE(umath, "radiansToDegrees", Flathead_impl::Math_RadiansToDegrees);
+	FUNCTION_PROTOTYPE(umath, "degreesToRadians", Flathead_impl::Math_DegreesToRadians);
+	FUNCTION_PROTOTYPE(umath, "unwindDegrees", Flathead_impl::Math_UnwindDegrees);
+	FUNCTION_PROTOTYPE(umath, "unwindRadians", Flathead_impl::Math_UnwindRadians);
 
 	globalTemplate->Set(String::NewFromUtf8(GetIsolate(), "UMath"), umath->GetFunction()->NewInstance(), ReadOnly);
 }
 
-void Flathead::Math_Abs(const FunctionCallbackInfo<Value>& args)
+void Flathead_impl::Math_Abs(const FunctionCallbackInfo<Value>& args)
 {
 	double value;
 
@@ -478,7 +478,7 @@ void Flathead::Math_Abs(const FunctionCallbackInfo<Value>& args)
 	args.GetReturnValue().Set(FMath::Abs(value));
 }
 
-void Flathead::Math_ACos(const FunctionCallbackInfo<Value>& args)
+void Flathead_impl::Math_ACos(const FunctionCallbackInfo<Value>& args)
 {
 	double value;
 
@@ -489,7 +489,7 @@ void Flathead::Math_ACos(const FunctionCallbackInfo<Value>& args)
 	args.GetReturnValue().Set(FMath::Acos(value));
 }
 
-void Flathead::Math_ASin(const FunctionCallbackInfo<Value>& args)
+void Flathead_impl::Math_ASin(const FunctionCallbackInfo<Value>& args)
 {
 	double value;
 
@@ -500,7 +500,7 @@ void Flathead::Math_ASin(const FunctionCallbackInfo<Value>& args)
 	args.GetReturnValue().Set(FMath::Asin(value));
 }
 
-void Flathead::Math_ATan(const FunctionCallbackInfo<Value>& args)
+void Flathead_impl::Math_ATan(const FunctionCallbackInfo<Value>& args)
 {
 	double value;
 
@@ -511,7 +511,7 @@ void Flathead::Math_ATan(const FunctionCallbackInfo<Value>& args)
 	args.GetReturnValue().Set(FMath::Atan(value));
 }
 
-void Flathead::Math_ATan2(const FunctionCallbackInfo<Value>& args)
+void Flathead_impl::Math_ATan2(const FunctionCallbackInfo<Value>& args)
 {
 	double Y, X;
 
@@ -523,7 +523,7 @@ void Flathead::Math_ATan2(const FunctionCallbackInfo<Value>& args)
 	args.GetReturnValue().Set(FMath::Atan2(Y, X));
 }
 
-void Flathead::Math_Ceil(const FunctionCallbackInfo<Value>& args)
+void Flathead_impl::Math_Ceil(const FunctionCallbackInfo<Value>& args)
 {
 	double value;
 
@@ -534,7 +534,7 @@ void Flathead::Math_Ceil(const FunctionCallbackInfo<Value>& args)
 	args.GetReturnValue().Set(FMath::CeilToInt(value));
 }
 
-void Flathead::Math_Clamp(const FunctionCallbackInfo<Value>& args)
+void Flathead_impl::Math_Clamp(const FunctionCallbackInfo<Value>& args)
 {
 	double value, minimum, maximum;
 
@@ -547,7 +547,7 @@ void Flathead::Math_Clamp(const FunctionCallbackInfo<Value>& args)
 	args.GetReturnValue().Set(FMath::Clamp<double>(value, minimum, maximum));
 }
 
-void Flathead::Math_ClampAngle(const FunctionCallbackInfo<Value>& args)
+void Flathead_impl::Math_ClampAngle(const FunctionCallbackInfo<Value>& args)
 {
 	double value, minAngle, maxAngle;
 
@@ -560,7 +560,7 @@ void Flathead::Math_ClampAngle(const FunctionCallbackInfo<Value>& args)
 	args.GetReturnValue().Set(FMath::ClampAngle(value, minAngle, maxAngle));
 }
 
-void Flathead::Math_Cos(const FunctionCallbackInfo<Value>& args)
+void Flathead_impl::Math_Cos(const FunctionCallbackInfo<Value>& args)
 {
 	double value;
 
@@ -571,7 +571,7 @@ void Flathead::Math_Cos(const FunctionCallbackInfo<Value>& args)
 	args.GetReturnValue().Set(FMath::Cos(value));
 }
 
-void Flathead::Math_Exp(const FunctionCallbackInfo<Value>& args)
+void Flathead_impl::Math_Exp(const FunctionCallbackInfo<Value>& args)
 {
 	double value;
 
@@ -582,7 +582,7 @@ void Flathead::Math_Exp(const FunctionCallbackInfo<Value>& args)
 	args.GetReturnValue().Set(FMath::Exp(value));
 }
 
-void Flathead::Math_FindDeltaAngle(const FunctionCallbackInfo<Value>& args)
+void Flathead_impl::Math_FindDeltaAngle(const FunctionCallbackInfo<Value>& args)
 {
 	double angle1, angle2;
 
@@ -594,7 +594,7 @@ void Flathead::Math_FindDeltaAngle(const FunctionCallbackInfo<Value>& args)
 	args.GetReturnValue().Set(FMath::FindDeltaAngle(angle1, angle2));
 }
 
-void Flathead::Math_RadiansToDegrees(const FunctionCallbackInfo<Value>& args)
+void Flathead_impl::Math_RadiansToDegrees(const FunctionCallbackInfo<Value>& args)
 {
 	double value;
 
@@ -605,7 +605,7 @@ void Flathead::Math_RadiansToDegrees(const FunctionCallbackInfo<Value>& args)
 	args.GetReturnValue().Set(FMath::RadiansToDegrees(value));
 }
 
-void Flathead::Math_DegreesToRadians(const FunctionCallbackInfo<Value>& args)
+void Flathead_impl::Math_DegreesToRadians(const FunctionCallbackInfo<Value>& args)
 {
 	double value;
 
@@ -616,7 +616,7 @@ void Flathead::Math_DegreesToRadians(const FunctionCallbackInfo<Value>& args)
 	args.GetReturnValue().Set(FMath::DegreesToRadians(value));
 }
 
-void Flathead::Math_UnwindRadians(const FunctionCallbackInfo<Value>& args)
+void Flathead_impl::Math_UnwindRadians(const FunctionCallbackInfo<Value>& args)
 {
 	double value;
 
@@ -627,7 +627,7 @@ void Flathead::Math_UnwindRadians(const FunctionCallbackInfo<Value>& args)
 	args.GetReturnValue().Set(FMath::UnwindRadians(value));
 }
 
-void Flathead::Math_UnwindDegrees(const FunctionCallbackInfo<Value>& args)
+void Flathead_impl::Math_UnwindDegrees(const FunctionCallbackInfo<Value>& args)
 {
 	double value;
 
@@ -638,7 +638,7 @@ void Flathead::Math_UnwindDegrees(const FunctionCallbackInfo<Value>& args)
 	args.GetReturnValue().Set(FMath::UnwindDegrees(value));
 }
 
-void Flathead::Math_FInterpConstantTo(const FunctionCallbackInfo<Value>& args)
+void Flathead_impl::Math_FInterpConstantTo(const FunctionCallbackInfo<Value>& args)
 {
 	double current, target, delta, speed;
 
@@ -652,7 +652,7 @@ void Flathead::Math_FInterpConstantTo(const FunctionCallbackInfo<Value>& args)
 	args.GetReturnValue().Set(FMath::FInterpConstantTo(current, target, delta, speed));
 }
 
-void Flathead::Math_FInterpTo(const FunctionCallbackInfo<Value>& args)
+void Flathead_impl::Math_FInterpTo(const FunctionCallbackInfo<Value>& args)
 {
 	double current, target, delta, speed;
 
@@ -666,7 +666,7 @@ void Flathead::Math_FInterpTo(const FunctionCallbackInfo<Value>& args)
 	args.GetReturnValue().Set(FMath::FInterpTo(current, target, delta, speed));
 }
 
-void Flathead::Math_FixedTurn(const FunctionCallbackInfo<Value>& args)
+void Flathead_impl::Math_FixedTurn(const FunctionCallbackInfo<Value>& args)
 {
 	double current, desired, rate;
 
@@ -679,7 +679,7 @@ void Flathead::Math_FixedTurn(const FunctionCallbackInfo<Value>& args)
 	args.GetReturnValue().Set(FMath::FixedTurn(current, desired, rate));
 }
 
-void Flathead::Math_FloatSelect(const FunctionCallbackInfo<Value>& args)
+void Flathead_impl::Math_FloatSelect(const FunctionCallbackInfo<Value>& args)
 {
 	double comparand, GEZero, TZero;
 
@@ -692,7 +692,7 @@ void Flathead::Math_FloatSelect(const FunctionCallbackInfo<Value>& args)
 	args.GetReturnValue().Set(FMath::FloatSelect(comparand, GEZero, TZero));
 }
 
-void Flathead::Math_Floor(const FunctionCallbackInfo<Value>& args)
+void Flathead_impl::Math_Floor(const FunctionCallbackInfo<Value>& args)
 {
 	double value;
 
@@ -703,7 +703,7 @@ void Flathead::Math_Floor(const FunctionCallbackInfo<Value>& args)
 	args.GetReturnValue().Set(FMath::FloorToDouble(value));
 }
 
-void Flathead::Math_Fmod(const FunctionCallbackInfo<Value>& args)
+void Flathead_impl::Math_Fmod(const FunctionCallbackInfo<Value>& args)
 {
 	double X, Y;
 
@@ -715,7 +715,7 @@ void Flathead::Math_Fmod(const FunctionCallbackInfo<Value>& args)
 	args.GetReturnValue().Set(FMath::Fmod(X, Y));
 }
 
-void Flathead::Math_Fractional(const FunctionCallbackInfo<Value>& args)
+void Flathead_impl::Math_Fractional(const FunctionCallbackInfo<Value>& args)
 {
 	double value;
 
@@ -726,14 +726,14 @@ void Flathead::Math_Fractional(const FunctionCallbackInfo<Value>& args)
 	args.GetReturnValue().Set(FMath::Fractional(value));
 }
 
-void Flathead::Math_FRand(const FunctionCallbackInfo<Value>& args)
+void Flathead_impl::Math_FRand(const FunctionCallbackInfo<Value>& args)
 {
 	HandleScope handle_scope(args.GetIsolate());
 
 	args.GetReturnValue().Set(FMath::FRand());
 }
 
-void Flathead::Math_FRandRange(const FunctionCallbackInfo<Value>& args)
+void Flathead_impl::Math_FRandRange(const FunctionCallbackInfo<Value>& args)
 {
 	double minimum, maximum;
 
@@ -745,7 +745,7 @@ void Flathead::Math_FRandRange(const FunctionCallbackInfo<Value>& args)
 	args.GetReturnValue().Set(FMath::FRandRange(minimum, maximum));
 }
 
-void Flathead::Math_IsFinite(const FunctionCallbackInfo<Value>& args)
+void Flathead_impl::Math_IsFinite(const FunctionCallbackInfo<Value>& args)
 {
 	double value;
 
@@ -756,7 +756,7 @@ void Flathead::Math_IsFinite(const FunctionCallbackInfo<Value>& args)
 	args.GetReturnValue().Set(FMath::IsFinite(value));
 }
 
-void Flathead::Math_IsNaN(const FunctionCallbackInfo<Value>& args)
+void Flathead_impl::Math_IsNaN(const FunctionCallbackInfo<Value>& args)
 {
 	double value;
 
@@ -767,7 +767,7 @@ void Flathead::Math_IsNaN(const FunctionCallbackInfo<Value>& args)
 	args.GetReturnValue().Set(FMath::IsNaN(value));
 }
 
-void Flathead::Math_IsNearlyEqual(const FunctionCallbackInfo<Value>& args)
+void Flathead_impl::Math_IsNearlyEqual(const FunctionCallbackInfo<Value>& args)
 {
 	double value1, value2, delta;
 
@@ -780,7 +780,7 @@ void Flathead::Math_IsNearlyEqual(const FunctionCallbackInfo<Value>& args)
 	args.GetReturnValue().Set(FMath::IsNearlyEqual(value1, value2, delta));
 }
 
-void Flathead::Math_IsNearlyZero(const FunctionCallbackInfo<Value>& args)
+void Flathead_impl::Math_IsNearlyZero(const FunctionCallbackInfo<Value>& args)
 {
 	double value;
 
@@ -791,7 +791,7 @@ void Flathead::Math_IsNearlyZero(const FunctionCallbackInfo<Value>& args)
 	args.GetReturnValue().Set(FMath::IsNearlyZero(value));
 }
 
-void Flathead::Math_IsPowerOfTwo(const FunctionCallbackInfo<Value>& args)
+void Flathead_impl::Math_IsPowerOfTwo(const FunctionCallbackInfo<Value>& args)
 {
 	double value;
 
@@ -802,7 +802,7 @@ void Flathead::Math_IsPowerOfTwo(const FunctionCallbackInfo<Value>& args)
 	args.GetReturnValue().Set(FMath::IsPowerOfTwo(value));
 }
 
-void Flathead::Math_GridSnap(const FunctionCallbackInfo<Value>& args)
+void Flathead_impl::Math_GridSnap(const FunctionCallbackInfo<Value>& args)
 {
 	double value, grid;
 
@@ -814,7 +814,7 @@ void Flathead::Math_GridSnap(const FunctionCallbackInfo<Value>& args)
 	args.GetReturnValue().Set(FMath::GridSnap(value, grid));
 }
 
-void Flathead::Math_InvSqrt(const FunctionCallbackInfo<Value>& args)
+void Flathead_impl::Math_InvSqrt(const FunctionCallbackInfo<Value>& args)
 {
 	double value;
 
@@ -825,7 +825,7 @@ void Flathead::Math_InvSqrt(const FunctionCallbackInfo<Value>& args)
 	args.GetReturnValue().Set(FMath::InvSqrt(value));
 }
 
-void Flathead::Math_InvSqrtEst(const FunctionCallbackInfo<Value>& args)
+void Flathead_impl::Math_InvSqrtEst(const FunctionCallbackInfo<Value>& args)
 {
 	double value;
 
@@ -836,7 +836,7 @@ void Flathead::Math_InvSqrtEst(const FunctionCallbackInfo<Value>& args)
 	args.GetReturnValue().Set(FMath::InvSqrtEst(value));
 }
 
-void Flathead::Math_Log2(const FunctionCallbackInfo<Value>& args)
+void Flathead_impl::Math_Log2(const FunctionCallbackInfo<Value>& args)
 {
 	double value;
 
@@ -847,7 +847,7 @@ void Flathead::Math_Log2(const FunctionCallbackInfo<Value>& args)
 	args.GetReturnValue().Set(FMath::Log2(value));
 }
 
-void Flathead::Math_Loge(const FunctionCallbackInfo<Value>& args)
+void Flathead_impl::Math_Loge(const FunctionCallbackInfo<Value>& args)
 {
 	double value;
 
@@ -858,7 +858,7 @@ void Flathead::Math_Loge(const FunctionCallbackInfo<Value>& args)
 	args.GetReturnValue().Set(FMath::Loge(value));
 }
 
-void Flathead::Math_LogX(const FunctionCallbackInfo<Value>& args)
+void Flathead_impl::Math_LogX(const FunctionCallbackInfo<Value>& args)
 {
 	double value, base;
 
@@ -870,7 +870,7 @@ void Flathead::Math_LogX(const FunctionCallbackInfo<Value>& args)
 	args.GetReturnValue().Set(FMath::LogX(value, base));
 }
 
-void Flathead::Math_MakePulsatingValue(const FunctionCallbackInfo<Value>& args)
+void Flathead_impl::Math_MakePulsatingValue(const FunctionCallbackInfo<Value>& args)
 {
 	double time, pulses, phase;
 
@@ -883,7 +883,7 @@ void Flathead::Math_MakePulsatingValue(const FunctionCallbackInfo<Value>& args)
 	args.GetReturnValue().Set(FMath::MakePulsatingValue(time, pulses, phase));
 }
 
-void Flathead::Math_Max(const FunctionCallbackInfo<Value>& args)
+void Flathead_impl::Math_Max(const FunctionCallbackInfo<Value>& args)
 {
 	double value1, value2;
 
@@ -895,7 +895,7 @@ void Flathead::Math_Max(const FunctionCallbackInfo<Value>& args)
 	args.GetReturnValue().Set(FMath::Max<double>(value1, value2));
 }
 
-void Flathead::Math_Min(const FunctionCallbackInfo<Value>& args)
+void Flathead_impl::Math_Min(const FunctionCallbackInfo<Value>& args)
 {
 	double value1, value2;
 
@@ -907,7 +907,7 @@ void Flathead::Math_Min(const FunctionCallbackInfo<Value>& args)
 	args.GetReturnValue().Set(FMath::Min<double>(value1, value2));
 }
 
-void Flathead::Math_Pow(const FunctionCallbackInfo<Value>& args)
+void Flathead_impl::Math_Pow(const FunctionCallbackInfo<Value>& args)
 {
 	double value1, value2;
 
@@ -919,21 +919,21 @@ void Flathead::Math_Pow(const FunctionCallbackInfo<Value>& args)
 	args.GetReturnValue().Set(FMath::Pow(value1, value2));
 }
 
-void Flathead::Math_Rand(const FunctionCallbackInfo<Value>& args)
+void Flathead_impl::Math_Rand(const FunctionCallbackInfo<Value>& args)
 {
 	HandleScope handle_scope(args.GetIsolate());
 
 	args.GetReturnValue().Set(FMath::Rand());
 }
 
-Handle<Context> Flathead::GetGlobalContext()
+Handle<Context> Flathead_impl::GetGlobalContext()
 {
 	EscapableHandleScope handle_scope(GetIsolate());
 
 	return handle_scope.Escape(Local<Context>::New(GetIsolate(), globalContext));
 }
 
-Handle<Object> Flathead::Expose(AActor *actor, FString Name)
+Handle<Object> Flathead_impl::Expose(AActor *actor, FString Name)
 {
 	// We will be creating temporary handles so we use a handle scope.
 	EscapableHandleScope handle_scope(GetIsolate());
@@ -956,14 +956,14 @@ Handle<Object> Flathead::Expose(AActor *actor, FString Name)
 	return handle_scope.Escape(obj);
 }
 
-void Flathead::WrapActor(Handle<Object> actor)
+void Flathead_impl::WrapActor(Handle<Object> actor)
 {
-	actor->SetAccessor(String::NewFromUtf8(GetIsolate(), "creationTime", String::kInternalizedString), Flathead::Actor_CreationTime);
+	actor->SetAccessor(String::NewFromUtf8(GetIsolate(), "creationTime", String::kInternalizedString), Flathead_impl::Actor_CreationTime);
 
-	actor->Set(String::NewFromUtf8(GetIsolate(), "setActorPosition", String::kInternalizedString), FunctionTemplate::New(GetIsolate(), Flathead::Actor_SetActorLocation)->GetFunction());
+	actor->Set(String::NewFromUtf8(GetIsolate(), "setActorPosition", String::kInternalizedString), FunctionTemplate::New(GetIsolate(), Flathead_impl::Actor_SetActorLocation)->GetFunction());
 }
 
-void Flathead::Actor_CreationTime(Local<String> name, const PropertyCallbackInfo<Value>& info)
+void Flathead_impl::Actor_CreationTime(Local<String> name, const PropertyCallbackInfo<Value>& info)
 {
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
@@ -974,7 +974,7 @@ void Flathead::Actor_CreationTime(Local<String> name, const PropertyCallbackInfo
 	info.GetReturnValue().Set(Number::New(info.GetIsolate(), value));
 }
 
-void Flathead::Actor_SetActorLocation(const FunctionCallbackInfo<Value>& args)
+void Flathead_impl::Actor_SetActorLocation(const FunctionCallbackInfo<Value>& args)
 {
 	float x, y, z;
 

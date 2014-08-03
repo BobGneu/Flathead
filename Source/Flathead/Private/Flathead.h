@@ -9,7 +9,7 @@
 
 #pragma once
 
-class Flathead : public IFlathead
+class Flathead_impl : public Flathead
 {
 
 public:
@@ -126,7 +126,7 @@ protected:
 
 private:
 
-	static Flathead* accessor;
+	static Flathead_impl* accessor;
 };
 
-IMPLEMENT_MODULE(Flathead, Flathead)
+IMPLEMENT_MODULE(Flathead_impl, Flathead)
