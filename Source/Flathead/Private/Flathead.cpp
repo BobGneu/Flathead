@@ -531,7 +531,7 @@ void Flathead::Math_Ceil(const FunctionCallbackInfo<Value>& args)
 
 	value = args[0]->NumberValue();
 
-	args.GetReturnValue().Set(FMath::Ceil(value));
+	args.GetReturnValue().Set(FMath::CeilToInt(value));
 }
 
 void Flathead::Math_Clamp(const FunctionCallbackInfo<Value>& args)
@@ -700,7 +700,7 @@ void Flathead::Math_Floor(const FunctionCallbackInfo<Value>& args)
 
 	value = args[0]->NumberValue();
 
-	args.GetReturnValue().Set(FMath::FloorDouble(value));
+	args.GetReturnValue().Set(FMath::FloorToDouble(value));
 }
 
 void Flathead::Math_Fmod(const FunctionCallbackInfo<Value>& args)
