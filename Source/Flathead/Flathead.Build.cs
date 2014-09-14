@@ -66,8 +66,10 @@ public class Flathead : ModuleRules
 
             PublicAdditionalLibraries.Add(Path.Combine(LibrariesPath, "icui18n.lib"));
             PublicAdditionalLibraries.Add(Path.Combine(LibrariesPath, "icuuc.lib"));
-            PublicAdditionalLibraries.Add(Path.Combine(LibrariesPath, "v8_base." + PlatformString + ".lib"));
-            PublicAdditionalLibraries.Add(Path.Combine(LibrariesPath, "v8_nosnapshot." + PlatformString + ".lib"));
+            PublicAdditionalLibraries.Add(Path.Combine(LibrariesPath, "v8_base.lib"));
+            PublicAdditionalLibraries.Add(Path.Combine(LibrariesPath, "v8_libbase.lib"));
+            PublicAdditionalLibraries.Add(Path.Combine(LibrariesPath, "v8_libplatform.lib"));
+            PublicAdditionalLibraries.Add(Path.Combine(LibrariesPath, "v8_nosnapshot.lib"));
             PublicAdditionalLibraries.Add(Path.Combine(LibrariesPath, "v8_snapshot.lib"));
 
             PublicIncludePaths.Add(Path.Combine(ThirdPartyPath, "v8", "Includes"));
