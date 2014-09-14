@@ -104,6 +104,8 @@ bool Flathead_impl::LoadGameScript(char* fileName)
 	if (!file)
 		return false;
 
+	Isolate::Scope isolate_scope(GetIsolate());
+
 	if (file.is_open())
 	{
 		file.seekg(0, file.end);
@@ -175,12 +177,13 @@ bool Flathead_impl::Execute(FString data, FString filename)
 bool Flathead_impl::Execute(char * data, char * filename)
 {
 	FString result;
-	TryCatch try_catch;
 
 	HandleScope handle_scope(GetIsolate());
+	TryCatch try_catch;
 
 	Local<Context> context = Local<Context>::New(GetIsolate(), globalContext);
 	Context::Scope context_scope(context);
+	context->Enter();
 
 	Handle<String> source = String::NewFromUtf8(GetIsolate(), data);
 	Handle<String> name = String::NewFromUtf8(GetIsolate(), filename);
@@ -189,7 +192,7 @@ bool Flathead_impl::Execute(char * data, char * filename)
 	Handle<Script> script = Script::Compile(source, &origin);
 
 	Local<Value> jsResult = script->Run();
-
+	context->Exit();
 	if (jsResult.IsEmpty())
 	{
 		String::Utf8Value stacktrace(try_catch.StackTrace());
