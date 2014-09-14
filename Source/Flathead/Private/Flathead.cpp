@@ -33,9 +33,13 @@ void Flathead_impl::StartupModule()
 {
 	V8::InitializeICU();
 
+	v8::Platform* platform = v8::platform::CreateDefaultPlatform();
+	v8::V8::InitializePlatform(platform);
+
 	accessor = this;
 
-	SetIsolate(Isolate::GetCurrent());
+	SetIsolate(v8::Isolate::New());
+	Isolate::Scope isolate_scope(GetIsolate());
 	HandleScope handle_scope(GetIsolate());
 
 	Handle<Context> context = CreateGlobalContext();
