@@ -5,6 +5,7 @@
 
 #include <fstream>
 
+#include "libplatform/libplatform.h"
 #include "StringConv.h"
 
 DEFINE_LOG_CATEGORY(FH);
