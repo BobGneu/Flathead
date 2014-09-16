@@ -51,9 +51,7 @@ protected:
 
 	void WrapActor(v8::Handle<v8::Object> actor_templ);
 
-	void DefineV8Functions(v8::Local<v8::ObjectTemplate> globalTemplate);
-	void DefineLoggingFunctions(v8::Local<v8::ObjectTemplate> globalTemplate);
-	void DefineUE4Functions(v8::Local<v8::ObjectTemplate> globalTemplate);
+	void DefineGameFunctions(v8::Local<v8::ObjectTemplate> objTemplate);
 	void DefineRequire(v8::Local<v8::ObjectTemplate> globalTemplate);
 	void DefineMath(v8::Local<v8::ObjectTemplate> globalTemplate);
 	void DefineActor(v8::Local<v8::ObjectTemplate> globalTemplate);
@@ -121,7 +119,6 @@ protected:
 	
 	static void Actor_CreationTime(v8::Local<v8::String> name, const v8::PropertyCallbackInfo<v8::Value>& info);
 	static void Actor_SetActorLocation(const v8::FunctionCallbackInfo<v8::Value>& args);
-
 	v8::Isolate *_Isolate;
 
 private:

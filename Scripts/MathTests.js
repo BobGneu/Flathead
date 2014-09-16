@@ -130,5 +130,6 @@
     // findDeltaAngle
 	assert(typeof UMath.findDeltaAngle === "function", "findDeltaAngle is supposed to be defined as a function");
 	assert(UMath.findDeltaAngle(15, 30) === 8.716814041137695, "findDeltaAngle is supposed to be 8.716814041137695 | " + UMath.findDeltaAngle(15, 30));
-
 })();
+
+true;

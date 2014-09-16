@@ -5,11 +5,12 @@
 
 #include <fstream>
 
+#include "libplatform/libplatform.h"
 #include "StringConv.h"
 
 DEFINE_LOG_CATEGORY(FH);
 
-#define BINDING_VERSION "1.1.0"
+#define BINDING_VERSION "1.2.0"
 
 using namespace v8;
 
@@ -32,9 +33,13 @@ void Flathead_impl::StartupModule()
 {
 	V8::InitializeICU();
 
+	v8::Platform* platform = v8::platform::CreateDefaultPlatform();
+	v8::V8::InitializePlatform(platform);
+
 	accessor = this;
 
-	SetIsolate(Isolate::GetCurrent());
+	SetIsolate(v8::Isolate::New());
+	Isolate::Scope isolate_scope(GetIsolate());
 	HandleScope handle_scope(GetIsolate());
 
 	Handle<Context> context = CreateGlobalContext();
@@ -52,15 +57,13 @@ void Flathead_impl::LoggerCallback(const char* message, int status)
 
 Handle<Context> Flathead_impl::CreateGlobalContext()
 {
-	Local<ObjectTemplate> objTemplate = ObjectTemplate::New(GetIsolate());
+	Handle<ObjectTemplate> globalTemplate = ObjectTemplate::New(GetIsolate());
 
-	DefineLoggingFunctions(objTemplate);
-	DefineUE4Functions(objTemplate);
-	DefineV8Functions(objTemplate);
-	DefineRequire(objTemplate);
-	DefineMath(objTemplate);
+	DefineGameFunctions(globalTemplate);
+	DefineRequire(globalTemplate);
+	DefineMath(globalTemplate);
 
-	return Context::New(GetIsolate(), NULL, objTemplate);
+	return Context::New(GetIsolate(), NULL, globalTemplate);
 }
 
 void Flathead_impl::ShutdownModule()
@@ -86,6 +89,8 @@ bool Flathead_impl::LoadScript(char* fileName)
 		return true;
 	}
 
+	UE_LOG(FH, Log, TEXT("Couldnt load: %s"), *FString(fileName));
+
 	return false;
 }
 
@@ -93,11 +98,14 @@ bool Flathead_impl::LoadGameScript(char* fileName)
 {
 	bool result = false;
 
-	UE_LOG(FH, Log, TEXT("Game: %s"), *(GetGameScriptsDirectory() + fileName));
 	std::ifstream file(*(GetGameScriptsDirectory() + fileName), std::ios::binary);
 
 	if (!file)
 		return false;
+
+	UE_LOG(FH, Log, TEXT("Game: %s"), *(GetGameScriptsDirectory() + fileName));
+
+	Isolate::Scope isolate_scope(GetIsolate());
 
 	if (file.is_open())
 	{
@@ -131,12 +139,14 @@ bool Flathead_impl::LoadGameScript(FString filename)
 bool Flathead_impl::LoadCoreScript(char* filename)
 {
 	bool result = false;
-
-	UE_LOG(FH, Log, TEXT("Core: %s"), *(GetCoreScriptsDirectory() + filename));
 	std::ifstream file(*(GetCoreScriptsDirectory() + filename), std::ios::binary);
 
 	if (!file)
 		return false;
+
+	UE_LOG(FH, Log, TEXT("Core: %s"), *(GetCoreScriptsDirectory() + filename));
+
+	Isolate::Scope isolate_scope(GetIsolate());
 
 	if (file.is_open())
 	{
@@ -170,12 +180,13 @@ bool Flathead_impl::Execute(FString data, FString filename)
 bool Flathead_impl::Execute(char * data, char * filename)
 {
 	FString result;
-	TryCatch try_catch;
 
 	HandleScope handle_scope(GetIsolate());
+	TryCatch try_catch;
 
 	Local<Context> context = Local<Context>::New(GetIsolate(), globalContext);
 	Context::Scope context_scope(context);
+	context->Enter();
 
 	Handle<String> source = String::NewFromUtf8(GetIsolate(), data);
 	Handle<String> name = String::NewFromUtf8(GetIsolate(), filename);
@@ -184,7 +195,7 @@ bool Flathead_impl::Execute(char * data, char * filename)
 	Handle<Script> script = Script::Compile(source, &origin);
 
 	Local<Value> jsResult = script->Run();
-
+	context->Exit();
 	if (jsResult.IsEmpty())
 	{
 		String::Utf8Value stacktrace(try_catch.StackTrace());
@@ -218,53 +229,31 @@ FString Flathead_impl::ArgsToFstr(const v8::FunctionCallbackInfo<v8::Value>& arg
 	return fstr;
 }
 
-#pragma region V8 Methods
+#pragma region Game Methods
 
-void Flathead_impl::DefineV8Functions(Local<ObjectTemplate> globalTemplate)
+void Flathead_impl::DefineGameFunctions(Local<ObjectTemplate> objTemplate)
 {
-	HandleScope scope(GetIsolate());
+	Local<ObjectTemplate> gameTmp = ObjectTemplate::New(GetIsolate());
 
-	Handle<Context> context = Context::New(GetIsolate());
-	Context::Scope ContextScope(context);
+	gameTmp->Set(String::NewFromUtf8(GetIsolate(), "log"), FunctionTemplate::New(GetIsolate(), Flathead_impl::LogCallback), ReadOnly);
+	gameTmp->Set(String::NewFromUtf8(GetIsolate(), "display"), FunctionTemplate::New(GetIsolate(), Flathead_impl::DisplayCallback), ReadOnly);
+	gameTmp->Set(String::NewFromUtf8(GetIsolate(), "warning"), FunctionTemplate::New(GetIsolate(), Flathead_impl::WarningCallback), ReadOnly);
+	gameTmp->Set(String::NewFromUtf8(GetIsolate(), "error"), FunctionTemplate::New(GetIsolate(), Flathead_impl::ErrorCallback), ReadOnly);
+	gameTmp->Set(String::NewFromUtf8(GetIsolate(), "fatal"), FunctionTemplate::New(GetIsolate(), Flathead_impl::FatalCallback), ReadOnly);
 
-	Local<FunctionTemplate> v8_tmp = v8::FunctionTemplate::New(GetIsolate());
+	Local<ObjectTemplate> engineTmp = ObjectTemplate::New(GetIsolate());
+	engineTmp->SetAccessor(String::NewFromUtf8(GetIsolate(), "version"), Flathead_impl::GetVersion);
+	gameTmp->Set(String::NewFromUtf8(GetIsolate(), "engine"), engineTmp, ReadOnly);
 
-	ACCESSOR_PROTOTYPE(v8_tmp, "version", Flathead_impl::GetV8Version);
-	ACCESSOR_PROTOTYPE(v8_tmp, "bindingVersion", Flathead_impl::GetBindingVersion);
+	Local<ObjectTemplate> v8Tmp = ObjectTemplate::New(GetIsolate());
+	v8Tmp->SetAccessor(String::NewFromUtf8(GetIsolate(), "version"), Flathead_impl::GetV8Version);
+	gameTmp->Set(String::NewFromUtf8(GetIsolate(), "v8"), v8Tmp, ReadOnly);
 
-	globalTemplate->Set(String::NewFromUtf8(GetIsolate(), "v8"), v8_tmp->GetFunction()->NewInstance(), ReadOnly);
-}
+	Local<ObjectTemplate> bindingTmp = ObjectTemplate::New(GetIsolate());
+	bindingTmp->SetAccessor(String::NewFromUtf8(GetIsolate(), "version"), Flathead_impl::GetBindingVersion);
+	gameTmp->Set(String::NewFromUtf8(GetIsolate(), "binding"), bindingTmp, ReadOnly);
 
-void Flathead_impl::GetV8Version(Local<String> name, const PropertyCallbackInfo<Value>& info)
-{
-	info.GetReturnValue().Set(String::NewFromUtf8(info.GetIsolate(), V8::GetVersion(), String::kNormalString));
-}
-
-void Flathead_impl::GetBindingVersion(Local<String> name, const PropertyCallbackInfo<Value>& info)
-{
-	info.GetReturnValue().Set(String::NewFromUtf8(info.GetIsolate(), BINDING_VERSION, String::kNormalString));
-}
-
-#pragma endregion
-
-#pragma region Logging Methods
-
-void Flathead_impl::DefineLoggingFunctions(Local<ObjectTemplate> globalTemplate)
-{
-	HandleScope scope(GetIsolate());
-
-	Handle<Context> context = Context::New(GetIsolate());
-	Context::Scope ContextScope(context);
-
-	Local<FunctionTemplate> log_tmp = FunctionTemplate::New(GetIsolate());
-
-	FUNCTION_PROTOTYPE(log_tmp, "log", Flathead_impl::LogCallback);
-	FUNCTION_PROTOTYPE(log_tmp, "display", Flathead_impl::DisplayCallback);
-	FUNCTION_PROTOTYPE(log_tmp, "warning", Flathead_impl::WarningCallback);
-	FUNCTION_PROTOTYPE(log_tmp, "error", Flathead_impl::ErrorCallback);
-	FUNCTION_PROTOTYPE(log_tmp, "fatal", Flathead_impl::FatalCallback);
-
-	globalTemplate->Set(String::NewFromUtf8(GetIsolate(), "game"), log_tmp->GetFunction()->NewInstance(), ReadOnly);
+	objTemplate->Set(String::NewFromUtf8(GetIsolate(), "game"), gameTmp, ReadOnly);
 }
 
 void Flathead_impl::LogCallback(const FunctionCallbackInfo<Value>& info)
@@ -302,43 +291,29 @@ void Flathead_impl::FatalCallback(const FunctionCallbackInfo<Value>& info)
 	info.GetReturnValue().Set(true);
 }
 
-#pragma endregion 
-
-#pragma region UE4 Functions
-
-void Flathead_impl::DefineUE4Functions(Local<ObjectTemplate> globalTemplate)
-{
-	HandleScope scope(GetIsolate());
-
-	Handle<Context> context = Context::New(GetIsolate());
-	Context::Scope ContextScope(context);
-
-	Local<FunctionTemplate> game_tmp = FunctionTemplate::New(GetIsolate());
-
-	ACCESSOR_PROTOTYPE(game_tmp, "version", Flathead_impl::GetVersion);
-
-	globalTemplate->Set(String::NewFromUtf8(GetIsolate(), "game"), game_tmp->GetFunction()->NewInstance(), ReadOnly);
-}
-
 void Flathead_impl::GetVersion(Local<String> name, const PropertyCallbackInfo<Value>& info)
 {
 	info.GetReturnValue().Set(String::NewFromUtf8(info.GetIsolate(), TCHAR_TO_UTF8(*GEngineVersion.ToString())));
 }
 
+void Flathead_impl::GetV8Version(Local<String> name, const PropertyCallbackInfo<Value>& info)
+{
+	info.GetReturnValue().Set(String::NewFromUtf8(info.GetIsolate(), V8::GetVersion(), String::kNormalString));
+}
+
+void Flathead_impl::GetBindingVersion(Local<String> name, const PropertyCallbackInfo<Value>& info)
+{
+	info.GetReturnValue().Set(String::NewFromUtf8(info.GetIsolate(), BINDING_VERSION, String::kNormalString));
+}
 #pragma endregion 
 
 #pragma region Require 
 
 void Flathead_impl::DefineRequire(Local<ObjectTemplate> objTemplate)
 {
-	HandleScope scope(GetIsolate());
-
-	Handle<Context> context = Context::New(GetIsolate());
-	Context::Scope ContextScope(context);
-
 	Local<FunctionTemplate> require = FunctionTemplate::New(GetIsolate(), Flathead_impl::Require);
 
-	objTemplate->Set(String::NewFromUtf8(GetIsolate(), "require"), require->GetFunction(), ReadOnly);
+	objTemplate->Set(String::NewFromUtf8(GetIsolate(), "require"), require, ReadOnly);
 }
 
 void Flathead_impl::Require(const FunctionCallbackInfo<Value>& info)
@@ -416,11 +391,6 @@ void Flathead_impl::DefineActor(v8::Local<v8::ObjectTemplate> globalTemplate)
 */
 void Flathead_impl::DefineMath(v8::Local<v8::ObjectTemplate> globalTemplate)
 {
-	HandleScope scope(GetIsolate());
-
-	Handle<Context> context = Context::New(GetIsolate());
-	Context::Scope ContextScope(context);
-
 	Local<FunctionTemplate> umath = FunctionTemplate::New(GetIsolate());
 	
 	// Constants
@@ -464,7 +434,7 @@ void Flathead_impl::DefineMath(v8::Local<v8::ObjectTemplate> globalTemplate)
 	FUNCTION_PROTOTYPE(umath, "unwindDegrees", Flathead_impl::Math_UnwindDegrees);
 	FUNCTION_PROTOTYPE(umath, "unwindRadians", Flathead_impl::Math_UnwindRadians);
 
-	globalTemplate->Set(String::NewFromUtf8(GetIsolate(), "UMath"), umath->GetFunction()->NewInstance(), ReadOnly);
+	globalTemplate->Set(String::NewFromUtf8(GetIsolate(), "UMath"), umath, ReadOnly);
 }
 
 void Flathead_impl::Math_Abs(const FunctionCallbackInfo<Value>& args)
