@@ -1,5 +1,3 @@
-game.log("Eventing!");
-
 if (typeof Object.addEventListener !== 'function') {
 	Object.prototype.addEventListener = function (name, fn) {
 		// If this object has yet to have any events attached, create a new object. 
@@ -31,15 +29,19 @@ if (typeof Object.dispatchEvent !== 'function') {
 	};
 }
 
-var CustomEvent = function (name, params) {
-	params = params || {
-		bubbles: false,
-		cancelable: false,
-		detail: undefined
-	};
+if (typeof CustomEvent !== 'function') {
+    var CustomEvent = function (name, params) {
+        params = params || {
+            bubbles: false,
+            cancelable: false,
+            detail: undefined
+        };
 
-	this.Name = name;
-	this.bubbles = params.bubbles || false;
-	this.detail = params.detail || {};
-	this.cancelable = params.cancelable || false;
-};
+        this.Name = name;
+        this.bubbles = params.bubbles || false;
+        this.detail = params.detail || {};
+        this.cancelable = params.cancelable || false;
+    };
+}
+
+true;

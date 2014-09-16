@@ -1,15 +1,22 @@
 /// https://developer.mozilla.org/en-US/docs/Web/API/CustomEvent
 
+game.log("Inititializing Flathead.");
+
 require("Assertion");
 require("Eventing");
 
-game.log("Inititializing Flathead.");
-
 Object.addEventListener("initialized", function (details) {
-	game.log("Inititialized.", v8.version, v8.bindingVersion);
+
+    game.display("Engine: " + game.engine.version);
+    game.display("V8: " + game.v8.version);
+    game.display("binding: " + game.binding.version);
+
 });
+
 var event = new CustomEvent("initialized");
 
 Object.dispatchEvent(event);
 
-require("MathTests");
+// require("MathTests");
+
+true;
