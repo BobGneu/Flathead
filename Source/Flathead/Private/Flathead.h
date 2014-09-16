@@ -49,7 +49,7 @@ protected:
 	bool LoadScript(char* fileName);
 	bool LoadCoreScript(char* fileName);
 
-	void WrapActor(v8::Handle<v8::Object> actor_templ);
+	void WrapActor(v8::Local<v8::ObjectTemplate> actor_templ);
 
 	void DefineGameFunctions(v8::Local<v8::ObjectTemplate> objTemplate);
 	void DefineRequire(v8::Local<v8::ObjectTemplate> globalTemplate);

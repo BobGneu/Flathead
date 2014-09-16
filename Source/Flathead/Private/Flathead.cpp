@@ -180,7 +180,7 @@ bool Flathead_impl::Execute(FString data, FString filename)
 bool Flathead_impl::Execute(char * data, char * filename)
 {
 	FString result;
-
+	Isolate::Scope iscope(GetIsolate());
 	HandleScope handle_scope(GetIsolate());
 	TryCatch try_catch;
 
@@ -906,6 +906,7 @@ Handle<Context> Flathead_impl::GetGlobalContext()
 Handle<Object> Flathead_impl::Expose(AActor *actor, FString Name)
 {
 	// We will be creating temporary handles so we use a handle scope.
+	Isolate::Scope isolate_scope(GetIsolate());
 	EscapableHandleScope handle_scope(GetIsolate());
 
 	Local<Context> context = Local<Context>::New(GetIsolate(), globalContext);
@@ -914,23 +915,21 @@ Handle<Object> Flathead_impl::Expose(AActor *actor, FString Name)
 	Handle<ObjectTemplate> actor_templ = ObjectTemplate::New();  
 	actor_templ->SetInternalFieldCount(1);
 
-	// WrapActor(actor_templ);
+	WrapActor(actor_templ);
 	
 	Local<Object> obj = actor_templ->NewInstance();
 	obj->SetInternalField(0, External::New(GetIsolate(), actor));
-
-	WrapActor(obj);
 
 	context->Global()->Set(String::NewFromUtf8(GetIsolate(), TCHAR_TO_ANSI(*Name)), obj);
 
 	return handle_scope.Escape(obj);
 }
 
-void Flathead_impl::WrapActor(Handle<Object> actor)
+void Flathead_impl::WrapActor(Local<ObjectTemplate> actor_templ)
 {
-	actor->SetAccessor(String::NewFromUtf8(GetIsolate(), "creationTime", String::kInternalizedString), Flathead_impl::Actor_CreationTime);
+	actor_templ->SetAccessor(String::NewFromUtf8(GetIsolate(), "creationTime"), Flathead_impl::Actor_CreationTime);
 
-	actor->Set(String::NewFromUtf8(GetIsolate(), "setActorPosition", String::kInternalizedString), FunctionTemplate::New(GetIsolate(), Flathead_impl::Actor_SetActorLocation)->GetFunction());
+	actor_templ->Set(String::NewFromUtf8(GetIsolate(), "setActorPosition"), FunctionTemplate::New(GetIsolate(), Flathead_impl::Actor_SetActorLocation));
 }
 
 void Flathead_impl::Actor_CreationTime(Local<String> name, const PropertyCallbackInfo<Value>& info)
