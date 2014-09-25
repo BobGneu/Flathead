@@ -9,6 +9,7 @@
     "Category" : "Programming Runtime.Language Binding",
 	"CreatedBy" : "Bob Chatman",
 	"CreatedByURL" : "http://gneu.org",
+	"EnabledByDefault" : true,
     "Modules" :
     [
         {
