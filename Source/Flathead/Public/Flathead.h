@@ -24,6 +24,26 @@ public:
 		return FModuleManager::Get().IsModuleLoaded("Flathead");
 	}
 
+	/**
+	* Called right after the module DLL has been loaded and the module object has been created
+	*/
+	virtual void StartupModule()
+	{
+		LoadFHDLL();
+	}
+
+	/**
+	* Called before the module is unloaded, right before the module object is destroyed.
+	*/
+	virtual void ShutdownModule()
+	{
+	}
+
+	void LoadFHDLL()
+	{
+
+	}
+
 	virtual bool LoadGameScript(FString fileName) = 0;
 	virtual bool LoadGameScript(char* fileName) = 0;
 
