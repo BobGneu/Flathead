@@ -48,19 +48,6 @@ public class Flathead : ModuleRules
     {
         if ((Target.Platform == UnrealTargetPlatform.Win64) || (Target.Platform == UnrealTargetPlatform.Win32))
         {
-            string LibrariesPath = Path.Combine(ThirdPartyPath, "Flathead", "Libraries", "Windows");
-
-            if (Target.Platform == UnrealTargetPlatform.Win64)
-            {
-                LibrariesPath = Path.Combine(LibrariesPath, "x64");
-            }
-            else
-            {
-                LibrariesPath = Path.Combine(LibrariesPath, "x86");
-            }
-
-            LibrariesPath = Path.Combine(LibrariesPath, "Release");
-
             // PublicAdditionalLibraries.Add(Path.Combine(LibrariesPath, "Flathead.dll"));
             PublicIncludePaths.Add(Path.Combine(ThirdPartyPath, "Flathead", "Includes"));
 
