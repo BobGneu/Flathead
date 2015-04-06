@@ -26,7 +26,6 @@ public class Flathead : ModuleRules
     {
         PrivateIncludePaths.AddRange(new string[] 
         { 
-            // Path.Combine(ThirdPartyPath, "v8", "Includes"),
             Path.Combine("Flathead", "Private") 
         });
         
@@ -46,17 +45,20 @@ public class Flathead : ModuleRules
 
     private bool LoadFlathead(TargetInfo Target)
     {
-        if ((Target.Platform == UnrealTargetPlatform.Win64) || (Target.Platform == UnrealTargetPlatform.Win32))
+        if ((Target.Platform != UnrealTargetPlatform.Win64) && (Target.Platform != UnrealTargetPlatform.Win32))
         {
-            // PublicAdditionalLibraries.Add(Path.Combine(LibrariesPath, "Flathead.dll"));
-            PublicIncludePaths.Add(Path.Combine(ThirdPartyPath, "Flathead", "Includes"));
-
-            Definitions.Add(string.Format("WITH_FLATHEAD=1"));
-
-            return true;
+            Definitions.Add(string.Format("WITH_FLATHEAD=0"));
+            return false;
         }
 
-        Definitions.Add(string.Format("WITH_FLATHEAD=0"));
-        return false;
+        string LibrariesPath = Path.Combine(ThirdPartyPath, "FlatheadCore", "lib", (Target.Platform == UnrealTargetPlatform.Win64 ? "x64" : "x86"));
+
+        PublicAdditionalLibraries.Add(Path.Combine(LibrariesPath, "Core.lib"));
+
+        PublicIncludePaths.Add(Path.Combine(ThirdPartyPath));
+
+        Definitions.Add(string.Format("WITH_FLATHEAD=1"));
+
+        return true;
     }
 }

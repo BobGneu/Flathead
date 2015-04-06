@@ -4,4 +4,4 @@
 
 #include "Engine.h"
 
-DECLARE_LOG_CATEGORY_EXTERN(LogFlathead, Log, All);
+DECLARE_LOG_CATEGORY_EXTERN(LogFlathead, Verbose, All);
