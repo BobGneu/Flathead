@@ -2,14 +2,16 @@
     "FileVersion" : 3,
     "FriendlyName" : "Flathead - Javascript Runtime",
     "Version" : 1,
-	"VersionName": "RC 1",
+	"VersionName": "1.0",
     "FriendlyVersion" : "1.0",
-    "EngineVersion" : 1579795,
+	"EngineVersion" : "4.7.2",
     "Description" : "V8 JavaScript empowered UE4, affording developers the ability to extend their games and levels harnessing the power of Javascript.",
     "Category" : "Programming Runtime.Language Binding",
 	"CreatedBy" : "Bob Chatman",
 	"CreatedByURL" : "http://gneu.org",
 	"EnabledByDefault" : true,
+    "IsBetaVersion": true,
+
     "Modules" :
     [
         {

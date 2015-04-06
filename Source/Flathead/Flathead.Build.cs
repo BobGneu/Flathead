@@ -26,7 +26,6 @@ public class Flathead : ModuleRules
     {
         PrivateIncludePaths.AddRange(new string[] 
         { 
-            Path.Combine(ThirdPartyPath, "v8", "Includes"),
             Path.Combine("Flathead", "Private") 
         });
         
@@ -41,42 +40,25 @@ public class Flathead : ModuleRules
             "Core" 
         });
 
-        LoadV8(Target);
+       LoadFlathead(Target);
     }
 
-    private bool LoadV8(TargetInfo Target)
+    private bool LoadFlathead(TargetInfo Target)
     {
-        if ((Target.Platform == UnrealTargetPlatform.Win64) || (Target.Platform == UnrealTargetPlatform.Win32))
+        if ((Target.Platform != UnrealTargetPlatform.Win64) && (Target.Platform != UnrealTargetPlatform.Win32))
         {
-            string LibrariesPath = Path.Combine(ThirdPartyPath, "v8", "Libraries", "Windows");
-
-            if (Target.Platform == UnrealTargetPlatform.Win64)
-            {
-                LibrariesPath = Path.Combine(LibrariesPath, "x64");
-            }
-            else
-            {
-                LibrariesPath = Path.Combine(LibrariesPath, "x86");
-            }
-
-            LibrariesPath = Path.Combine(LibrariesPath, "Release");
-
-            PublicAdditionalLibraries.Add(Path.Combine(LibrariesPath, "icui18n.lib"));
-            PublicAdditionalLibraries.Add(Path.Combine(LibrariesPath, "icuuc.lib"));
-            PublicAdditionalLibraries.Add(Path.Combine(LibrariesPath, "v8_base.lib"));
-            PublicAdditionalLibraries.Add(Path.Combine(LibrariesPath, "v8_libbase.lib"));
-            PublicAdditionalLibraries.Add(Path.Combine(LibrariesPath, "v8_libplatform.lib"));
-            PublicAdditionalLibraries.Add(Path.Combine(LibrariesPath, "v8_nosnapshot.lib"));
-            PublicAdditionalLibraries.Add(Path.Combine(LibrariesPath, "v8_snapshot.lib"));
-
-            PublicIncludePaths.Add(Path.Combine(ThirdPartyPath, "v8", "Includes"));
-
-            Definitions.Add(string.Format("WITH_FLATHEAD=1"));
-
-            return true;
+            Definitions.Add(string.Format("WITH_FLATHEAD=0"));
+            return false;
         }
 
-        Definitions.Add(string.Format("WITH_FLATHEAD=0"));
-        return false;
+        string LibrariesPath = Path.Combine(ThirdPartyPath, "FlatheadCore", "lib", (Target.Platform == UnrealTargetPlatform.Win64 ? "x64" : "x86"));
+
+        PublicAdditionalLibraries.Add(Path.Combine(LibrariesPath, "Core.lib"));
+
+        PublicIncludePaths.Add(Path.Combine(ThirdPartyPath));
+
+        Definitions.Add(string.Format("WITH_FLATHEAD=1"));
+
+        return true;
     }
 }
